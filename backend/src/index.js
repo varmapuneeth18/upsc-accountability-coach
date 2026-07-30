@@ -23,11 +23,21 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "http://localhost:3000")
   .map((o) => o.trim())
   .filter(Boolean);
 
+// Vercel gives every deployment (production, branch, and preview) its own
+// unique-hash subdomain, so an exact-match allowlist can't keep up. Any
+// *.vercel.app origin is allowed on top of the explicit list below, which
+// still covers localhost and any custom domain you point at this project.
+const VERCEL_PREVIEW_ORIGIN = /^https:\/\/[a-z0-9-]+\.vercel\.app$/;
+
 app.use(
   cors({
     origin(origin, callback) {
       // Allow non-browser requests (no Origin header, e.g. curl/health checks).
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        VERCEL_PREVIEW_ORIGIN.test(origin)
+      ) {
         callback(null, true);
       } else {
         callback(new Error(`Origin ${origin} not allowed`));
